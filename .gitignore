@@ -32,3 +32,32 @@ yarn-error.log*
 .next/
 .nuxt/
 .vite/
+
+# Entorno virtual
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Notebooks (ignorar todos los .ipynb)
+#*.ipynb
+
+# Datos (no versionar crudos ni derivados pesados)
+data/raw/
+#data/interim/
+#data/reports_html/
+
+# Entorno/secretos
+.env
+
+# SO / IDE
+.DS_Store
+Thumbs.db
+.vscode/

@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/backend/__init__.py
+src/backend/cuentas_nacionales/__init__.py
+src/backend/cuentas_nacionales/pib/__init__.py
+src/backend/cuentas_nacionales/pib/demanda.py
+src/backend/cuentas_nacionales/pib/helpers.py
+src/backend/cuentas_nacionales/pib/oferta.py
+src/backend/cuentas_nacionales/pib/pib_constantes.py
+src/backend/cuentas_nacionales/pib/views.py
+src/frontend/__init__.py
+src/informed_economist.egg-info/PKG-INFO
+src/informed_economist.egg-info/SOURCES.txt
+src/informed_economist.egg-info/dependency_links.txt
+src/informed_economist.egg-info/top_level.txt

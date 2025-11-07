@@ -1,0 +1,35 @@
+/* Sidebar estilo Sneat */
+.sidebar {
+    border-right: 1px solid #e5e7eb;
+    background-color: #ffffff !important;
+    min-height: 100vh;
+    border-radius: 0 14px 14px 0;
+    padding: 1rem;
+}
+
+/* Links de navegación */
+.nav-link {
+    color: #334155 !important;
+    border-radius: 10px !important;
+    margin-bottom: 6px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+    background-color: #f1f5f9 !important;
+}
+
+.nav-link.active {
+    background-color: #847f85 !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+/* Área de contenido */
+#page-content {
+    background-color: #f9fafb;
+    border-radius: 14px;
+    min-height: 90vh;
+    box-shadow: inset 0 0 0.5px rgba(0,0,0,0.1);
+}
+
