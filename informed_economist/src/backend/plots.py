@@ -1,11 +1,10 @@
-from typing import Optional, Dict, List, Iterable
+from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
+from typing import Mapping, Hashable, Optional, List, Literal, Union, Dict, Iterable
+from plotly.colors import qualitative as pq
 from plotly.subplots import make_subplots
-
-from typing import Optional, Dict, List, Iterable
-import pandas as pd
-import plotly.graph_objects as go
 
 # =========================================================
 # Helpers de color
@@ -303,93 +302,500 @@ def plot_bar_subplots_by_administration(df, variables, colors, title, y_title = 
     
     return fig
 
-
 def plot_stacked_bars(
     df: pd.DataFrame,
-    category_columns: list[str],
-    title: str = "",
-    xlabel: str = "",
-    ylabel: str = "",
-    colors: list[str] | None = None,
-    legend_title: str = "Categories",
-    barmode: str = "relative",
+    category_columns,
+    title: str = '',
+    xlabel: str = '',
+    ylabel: str = '',
+    colors=None,
+    legend_title: str = 'Categories',
+    barmode: str = 'relative',
     title_size: int = 16,
     axis_label_size: int = 14,
     legend_size: int = 12,
     width: int = 900,
     height: int = 500,
-    decimals: int = 1,
-    as_percent: bool = False,  # 👈 nuevo parámetro
+    decimals: int = 0
 ):
     """
-    Stacked/grouped bar chart con opción de graficar porcentajes.
+    Plots a stacked or grouped bar chart using Plotly with a horizontal legend.
     """
-
-    # Validaciones rápidas
-    missing = [c for c in category_columns if c not in df.columns]
-    if missing:
-        raise ValueError(f"Columnas no encontradas en df: {missing}")
-
-    df_plot = df.copy()
-
-    # --- Si se solicita graficar como porcentaje ---
-    if as_percent:
-        df_sum = df_plot[category_columns].sum(axis=1)
-        df_plot[category_columns] = (
-            df_plot[category_columns].div(df_sum, axis=0) * 100
-        )  # convierte a %
-        ylabel = ylabel or "Porcentaje (%)"
-        decimals = 1
-
     fig = go.Figure()
 
+    # Colores por defecto (Plotly auto-asigna si None)
     if colors is None:
         colors = [None] * len(category_columns)
-    elif len(colors) != len(category_columns):
-        raise ValueError("colors debe tener la misma longitud que category_columns")
 
+    # Trazas por categoría
     for column, color in zip(category_columns, colors):
-        yvals = pd.to_numeric(df_plot[column], errors="coerce").round(decimals)
-        fig.add_trace(
-            go.Bar(
-                x=df_plot.index,
-                y=yvals,
-                name=column,
-                marker=dict(color=color) if color else None,
+        fig.add_trace(go.Bar(
+            x=df.index,
+            y=df[column].round(decimals),
+            name=column,
+            marker=dict(color=color) if color else None
+        ))
+
+    # Layout actualizado (sin titlefont)
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=title_size)),
+        xaxis=dict(
+            title=dict(text=xlabel, font=dict(size=axis_label_size)),
+            tickangle=-45
+        ),
+        yaxis=dict(
+            title=dict(text=ylabel, font=dict(size=axis_label_size)),
+            tickformat=f",.{decimals}f"
+        ),
+        width=width,
+        height=height,
+        barmode=barmode,  # 'relative' (stacked) o 'group'
+        legend=dict(
+            orientation="h",
+            x=0.5, y=-0.3,
+            xanchor="center", yanchor="top",
+            font=dict(size=legend_size)
+        ),
+        legend_title=dict(text=legend_title, font=dict(size=legend_size)),
+        margin=dict(l=40, r=40, t=60, b=90)
+    )
+
+    return fig
+
+
+def format_y_axis(fig: go.Figure, decimals: int = 2, secondary_decimals: int | None = None) -> None:
+    """
+    Formatea ejes Y (primario y secundario si existe) con miles y decimales.
+    """
+    fig.update_layout(yaxis=dict(tickformat=f",.{decimals}f"))
+    if "yaxis2" in fig.layout and fig.layout.yaxis2 is not None:
+        s = secondary_decimals if secondary_decimals is not None else decimals
+        fig.update_layout(yaxis2=dict(tickformat=f",.{s}f"))
+
+def simple_linegraph(
+    df: pd.DataFrame,
+    y_columns,
+    title: str = '',
+    title_color: str = "black",
+    xaxis_title: str = '',
+    yaxis_title: str = '',
+    width: int = 700,
+    height: int = 300,
+    decimals: int = 2,
+    secondary_y: str | None = None,
+    secondary_y_title: str = '',
+    line_colors: list[str] | None = None,
+    yaxis_title_color: str = "black",
+    secondary_yaxis_title_color: str = "black"
+) -> go.Figure:
+    """
+    Crea un gráfico de líneas con soporte para eje Y secundario y formateo.
+    """
+    fig = go.Figure()
+
+    if isinstance(y_columns, str):
+        y_columns = [y_columns]
+
+    if line_colors is None:
+        line_colors = [None] * len(y_columns)
+    if len(line_colors) != len(y_columns):
+        raise ValueError("The number of colors provided must match the number of y_columns.")
+
+    # Series
+    for column, color in zip(y_columns, line_colors):
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=df[column],
+            mode='lines',
+            name=column,
+            line=dict(color=color) if color else None,
+            yaxis="y2" if (secondary_y and column == secondary_y) else "y"
+        ))
+
+    fig.update_layout(
+        title=dict(text=title, font=dict(color=title_color)),
+        xaxis=dict(title=dict(text=xaxis_title)),
+        yaxis=dict(
+            title=dict(text=yaxis_title, font=dict(color=yaxis_title_color))
+        ),
+        width=width,
+        height=height,
+        margin=dict(l=40, r=40, t=40, b=40),
+        legend=dict(
+            orientation="h",
+            x=0.5, y=-0.2,
+            xanchor="center", yanchor="top"
+        )
+    )
+
+    # Eje secundario (si aplica)
+    if secondary_y:
+        fig.update_layout(
+            yaxis2=dict(
+                title=dict(
+                    text=secondary_y_title if secondary_y_title else secondary_y,
+                    font=dict(color=secondary_yaxis_title_color)
+                ),
+                overlaying="y",
+                side="right",
+                showgrid=False
             )
         )
 
-    # Layout general
+    # Formato de miles/decimales en Y (y Y2 si existe)
+    format_y_axis(fig, decimals=decimals)
+
+    return fig
+
+def create_pie_chart(df, names_column, values_column, title_text, subtitle_text):
+    """
+    Crea un gráfico de pastel y actualiza el layout para centrar el título y añadir un subtítulo.
+
+    Args:
+    df (pd.DataFrame): DataFrame con los datos para el gráfico de pastel.
+    names_column (str): Nombre de la columna que contiene las categorías.
+    values_column (str): Nombre de la columna que contiene los valores.
+    title_text (str): Texto para el título del gráfico.
+    subtitle_text (str): Texto para el subtítulo del gráfico.
+
+    Returns:
+    go.Figure: Objeto de figura de Plotly.
+    """
+    # Ordenar el DataFrame de mayor a menor según los valores
+    df = df.sort_values(by=values_column, ascending=False)
+
+    # Crear el gráfico de pastel
+    fig = px.pie(df, names=names_column, values=values_column)
+
+    # Actualizar el layout para centrar el título, añadir el subtítulo y ubicar las leyendas debajo del gráfico
     fig.update_layout(
-        title=dict(text=title, font=dict(size=title_size)),
-        width=width,
-        height=height,
-        barmode=barmode,
+        title={
+            'text': title_text,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': {'size': 30}
+        },
+        annotations=[
+            dict(
+                text=subtitle_text,
+                showarrow=False,
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=1,
+                xanchor='center',
+                yanchor='bottom',
+                font=dict(size=14)
+            )
+        ],
+        margin=dict(t=120),  # Añadir margen superior para evitar solapamiento
         legend=dict(
             orientation="h",
-            x=0.5,
-            y=-0.3,
+            yanchor="bottom",
+            y=-0.3,  # Posición debajo del gráfico
             xanchor="center",
-            yanchor="top",
-            font=dict(size=legend_size),
-        ),
-        legend_title=dict(text=legend_title, font=dict(size=legend_size)),
-        margin=dict(l=40, r=40, t=60, b=90),
+            x=0.5
+        )
     )
 
-    fig.update_xaxes(
-        title_text=xlabel,
-        title_font=dict(size=axis_label_size),
-        tickangle=-45,
-    )
+    return fig
 
-    tickfmt = f",.{decimals}f"
-    if as_percent:
-        tickfmt = ".1f"  # sin separadores, solo decimales
-    fig.update_yaxes(
-        title_text=ylabel,
-        title_font=dict(size=axis_label_size),
-        tickformat=tickfmt,
+
+def plot_bars(
+    data: pd.Series | pd.DataFrame,
+    *,
+    category_col: str | None = None,
+    value_col: str | None = None,
+    group_labels: Optional[Mapping[str, Hashable] | pd.Series] = None,
+
+    orientation: str = "h",               # "h" horizontal | "v" vertical
+    color_mode: str = "single",           # "single" | "by_groups"
+    bar_color: str = "rgb(33,150,243)",
+    palette: Optional[Mapping[Hashable, str]] = None,
+    bar_opacity: float = 0.95,
+    show_group_legend: bool = True,
+
+    sort: str = "desc",                   # "none" | "asc" | "desc" | "abs_desc"
+    top_n: int | None = None,
+
+    show_labels: bool = True,
+    decimals: int = 1,
+    label_with_sign: bool = False,
+    label_suffix: str = "",
+    custom_hovertemplate: str | None = None,
+    subtitle: str | None = None,
+
+    title: str = "Bar Chart",
+    xaxis_title: str = "",
+    yaxis_title: str = "",
+    value_axis_tickformat: str | None = None,
+    category_tickangle: int = 0,
+
+    width: int = 950,
+    height: int = 600,
+    title_size: int = 20,
+    axis_label_size: int = 14,
+    margins: tuple[int, int, int, int] = (80, 40, 90, 60),
+
+    show_zero_line: bool = True,
+    zero_line_dash: str = "dot",
+    zero_line_color: str = "rgba(120,120,120,0.6)",
+):
+    # ---- Normalizar a Serie ----
+    if isinstance(data, pd.Series):
+        s = data.copy().dropna()
+    else:
+        if category_col is None or value_col is None:
+            raise ValueError("With DataFrame, `category_col` and `value_col` are required.")
+        s = pd.Series(data[value_col].values, index=data[category_col].values).dropna()
+
+    # ---- Orden y top_n ----
+    if sort == "asc":
+        s = s.sort_values(ascending=True)
+    elif sort == "desc":
+        s = s.sort_values(ascending=False)
+    elif sort == "abs_desc":
+        s = s.reindex(s.abs().sort_values(ascending=False).index)
+    elif sort != "none":
+        raise ValueError("sort must be one of: 'none','asc','desc','abs_desc'")
+
+    if top_n is not None:
+        s = s.iloc[:top_n]
+
+    categories = s.index.tolist()
+    values = s.values.tolist()
+
+    # ---- Etiquetas ----
+    sign = "+" if label_with_sign else ""
+    label_fmt = f"{sign}{{v:.{decimals}f}}{label_suffix}"
+    labels = [label_fmt.format(v=v) for v in values] if show_labels else None
+
+    # ---- Hover ----
+    if custom_hovertemplate is None:
+        hover_tmpl = (
+            ("<b>%{y}</b><br>Valor: %{x:." + str(decimals) + "f}" + label_suffix + "<extra></extra>")
+            if orientation == "h"
+            else ("<b>%{x}</b><br>Valor: %{y:." + str(decimals) + "f}" + label_suffix + "<extra></extra>")
+        )
+    else:
+        hover_tmpl = custom_hovertemplate
+
+    fig = go.Figure()
+
+    # ---- Colores ----
+    if color_mode == "single":
+        # ✅ FIX x/y según orientación
+        fig.add_trace(go.Bar(
+            x=values if orientation == "v" else values,
+            y=categories if orientation == "h" else categories,
+            orientation=orientation,
+            marker=dict(color=bar_color, opacity=bar_opacity),
+            text=labels,
+            textposition="outside" if show_labels else None,
+            cliponaxis=False,
+            hovertemplate=hover_tmpl,
+            name=""
+        ))
+        showlegend = False
+
+    elif color_mode == "by_groups":
+        if group_labels is None:
+            raise ValueError("With color_mode='by_groups', provide `group_labels` (Series or dict).")
+        group_map = group_labels.to_dict() if isinstance(group_labels, pd.Series) else dict(group_labels)
+        groups_for_s = [group_map.get(cat, None) for cat in categories]
+
+        if palette is None:
+            base = pq.D3 + pq.Set2 + pq.Set3
+            uniq = []
+            for g in groups_for_s:
+                if g not in uniq:
+                    uniq.append(g)
+            palette = {g: base[i % len(base)] for i, g in enumerate(uniq)}
+
+        if show_group_legend:
+            # Una traza por grupo
+            by_group: dict[Hashable, list[tuple[str, float]]] = {}
+            for cat, val, g in zip(categories, values, groups_for_s):
+                by_group.setdefault(g, []).append((cat, val))
+
+            for g, items in by_group.items():
+                cats_g = [c for c, _ in items]
+                vals_g = [v for _, v in items]
+                fig.add_trace(go.Bar(
+                    x=vals_g if orientation == "v" else vals_g,   # ✅ FIX
+                    y=cats_g if orientation == "h" else cats_g,   # ✅ FIX
+                    orientation=orientation,
+                    marker=dict(color=palette.get(g, "gray"), opacity=bar_opacity),
+                    text=[label_fmt.format(v=v) for v in vals_g] if show_labels else None,
+                    textposition="outside" if show_labels else None,
+                    cliponaxis=False,
+                    hovertemplate=hover_tmpl,
+                    name=str(g)
+                ))
+            showlegend = True
+        else:
+            colors = [palette.get(g, "gray") for g in groups_for_s]
+            fig.add_trace(go.Bar(
+                x=values if orientation == "v" else values, 
+                y=categories if orientation == "h" else categories,
+                orientation=orientation,
+                marker=dict(color=colors, opacity=bar_opacity),
+                text=labels,
+                textposition="outside" if show_labels else None,
+                cliponaxis=False,
+                hovertemplate=hover_tmpl,
+                name=""
+            ))
+            showlegend = False
+    else:
+        raise ValueError("color_mode must be 'single' or 'by_groups'")
+
+    # ---- Títulos ----
+    full_title = f"{title}<br><sup>{subtitle}</sup>" if subtitle else title
+
+    tickfmt = value_axis_tickformat or f",.{decimals}f"
+    if orientation == "h":
+        fig.update_layout(
+            title=dict(text=full_title, font=dict(size=title_size)),
+            xaxis=dict(
+                title=dict(text=xaxis_title, font=dict(size=axis_label_size)),
+                tickformat=tickfmt,
+                zeroline=True, zerolinewidth=1, zerolinecolor=zero_line_color,
+                gridcolor="rgba(200,200,200,0.35)"
+            ),
+            yaxis=dict(
+                title=dict(text=yaxis_title, font=dict(size=axis_label_size)),
+                tickangle=category_tickangle,
+                categoryorder="array",
+                categoryarray=categories
+            ),
+            width=width, height=height,
+            margin=dict(l=margins[0], r=margins[1], t=margins[2], b=margins[3]),
+            showlegend=showlegend,
+            legend=dict(orientation="h", x=0.5, y=-0.2, xanchor="center", yanchor="top") if showlegend else dict()
+        )
+    else:
+        fig.update_layout(
+            title=dict(text=full_title, font=dict(size=title_size)),
+            xaxis=dict(
+                title=dict(text=xaxis_title, font=dict(size=axis_label_size)),
+                tickangle=category_tickangle,
+                categoryorder="array",
+                categoryarray=categories
+            ),
+            yaxis=dict(
+                title=dict(text=yaxis_title, font=dict(size=axis_label_size)),
+                tickformat=tickfmt,
+                zeroline=True, zerolinewidth=1, zerolinecolor=zero_line_color,
+                gridcolor="rgba(200,200,200,0.35)"
+            ),
+            width=width, height=height,
+            margin=dict(l=margins[0], r=margins[1], t=margins[2], b=margins[3]),
+            showlegend=showlegend,
+            legend=dict(orientation="h", x=0.5, y=-0.2, xanchor="center", yanchor="top") if showlegend else dict()
+        )
+
+    # ---- Línea 0 y padding de rango ----
+    if show_zero_line:
+        (fig.add_vline(x=0, line_width=1, line_dash=zero_line_dash, line_color=zero_line_color)
+         if orientation == "h" else
+         fig.add_hline(y=0, line_width=1, line_dash=zero_line_dash, line_color=zero_line_color))
+
+    vmin, vmax = min(0, min(values)), max(0, max(values))
+    pad = max(abs(vmin), abs(vmax)) * 0.07 if vmin != vmax else 1
+    if orientation == "h":
+        fig.update_xaxes(range=[vmin - pad, vmax + pad])
+    else:
+        fig.update_yaxes(range=[vmin - pad, vmax + pad])
+
+    return fig
+
+TotalMode = Literal["sum", "provided", "none"]
+
+def plot_contributions(
+    df: pd.DataFrame,
+    cols: Optional[List[str]] = None,
+    title: str = "",
+    yaxis_title: str = "Contribución (pp)",
+    total_mode: TotalMode = "sum",
+    total_series: Optional[pd.Series] = None,
+    total_name: str = "Total",
+    total_color: Optional[str] = "#2E86AB",  # 🎨 NUEVO parámetro
+    colors: Optional[Union[Dict[str, str], List[str]]] = None,
+    height: int = 500,
+    width: int = 950,
+) -> go.Figure:
+    """
+    Plot stacked contributions as bars and their row-wise sum as a line.
+    """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("df.index must be a DatetimeIndex.")
+    if cols is None:
+        cols = list(df.columns)
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise KeyError(f"Columns not found: {missing}")
+
+    _df = df[cols].copy()
+
+    # Total
+    if total_mode == "sum":
+        total = _df.sum(axis=1)
+    elif total_mode == "provided":
+        if total_series is None:
+            raise ValueError("total_series is required when total_mode='provided'.")
+        total = total_series.reindex(_df.index)
+    else:
+        total = None
+
+    # Colors
+    if isinstance(colors, dict):
+        color_map = {c: colors.get(c) for c in cols}
+    elif isinstance(colors, list):
+        color_map = {c: colors[i % len(colors)] for i, c in enumerate(cols)}
+    else:
+        color_map = {c: None for c in cols}
+
+    # Figure
+    fig = go.Figure()
+
+    # Barras
+    for c in cols:
+        fig.add_trace(
+            go.Bar(
+                x=_df.index,
+                y=_df[c],
+                name=c,
+                marker_color=color_map.get(c),
+                hovertemplate="<b>%{x|%Y-%m-%d}</b><br>%{customdata}<br>Valor: %{y:.2f}<extra></extra>",
+                customdata=[c] * len(_df),
+            )
+        )
+
+    # Línea total (con color personalizado)
+    if total is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=total.index,
+                y=total.values,
+                mode="lines",
+                name=total_name,
+                line=dict(width=2.2, color=total_color),  # 👈 aquí se aplica
+                hovertemplate="<b>%{x|%Y-%m-%d}</b><br>"+total_name+": %{y:.2f}<extra></extra>",
+            )
+        )
+
+    # Layout
+    fig.update_layout(
+        title=title,
+        barmode="relative",
+        height=height,
+        width=width,
+        legend=dict(orientation="h", y=-0.15, x=0.0),
+        margin=dict(l=60, r=20, t=60, b=60),
     )
+    fig.update_yaxes(title=yaxis_title, zeroline=True, zerolinewidth=1, zerolinecolor="rgba(0,0,0,0.25)")
+    fig.update_xaxes(type="date", showspikes=True, spikemode="across", spikethickness=1)
 
     return fig

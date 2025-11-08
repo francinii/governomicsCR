@@ -1,6 +1,7 @@
+from __future__ import annotations
 import pandas as pd
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Literal, Union
 
 def compute_basic_statistics(df, value_col="PIB_TC", groupby_col="Label"):
     stats = (
@@ -141,3 +142,103 @@ def validate_percentage_sum(
             print(f"⚠️  {n_invalid} rows failed validation. Max deviation: {result['max_abs_deviation']}.")
     
     return result
+
+
+ReturnMode = Literal["append", "others_plus_new", "new_only"]
+Method = Literal["sum", "mean"]
+
+def aggregate_columns(
+    df: pd.DataFrame,
+    cols_to_aggregate: List[str],
+    method: Method = "sum",
+    new_col_name: str | None = None,
+    axis: Literal[0, 1] = 1,
+    return_mode: ReturnMode = "append",
+) -> Union[pd.Series, pd.DataFrame]:
+    """
+    Aggregate selected columns and return the result combined with the DataFrame in different modes.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame containing the columns to aggregate.
+    cols_to_aggregate : list of str
+        Columns to aggregate. Duplicates are ignored preserving first occurrence order.
+    method : {'sum', 'mean'}, default='sum'
+        Aggregation method to apply across the selected columns.
+    new_col_name : str, optional
+        Name for the aggregated output column. If not provided and return_mode != 'new_only',
+        a default name is generated. If return_mode == 'new_only' and not provided, a Series is returned.
+    axis : {0, 1}, default=1
+        Axis along which to aggregate:
+        - 1 aggregates across columns (row-wise) -> typical case here.
+        - 0 aggregates across rows (column-wise).
+    return_mode : {'append', 'others_plus_new', 'new_only'}, default='append'
+        - 'append' : return original df with the new aggregated column appended.
+        - 'others_plus_new' : return df without the aggregated columns, plus the new column.
+        - 'new_only' : return only the aggregated result (Series if new_col_name is None, otherwise single-column DataFrame).
+
+    Returns
+    -------
+    pd.Series or pd.DataFrame
+        Aggregated output according to `return_mode`.
+
+    Raises
+    ------
+    KeyError
+        If any column in `cols_to_aggregate` does not exist in `df`.
+    ValueError
+        If `method` or `return_mode` are invalid, or if `axis` is not 0 or 1.
+
+    Examples
+    --------
+    >>> # Row-wise sum
+    >>> out = aggregate_columns(df, ['A','B','E'], new_col_name='A_B_E', return_mode='append')
+
+    >>> # Keep everything except the inputs, plus the new total
+    >>> out = aggregate_columns(df, ['A','B','E'], new_col_name='Total_ABE', return_mode='others_plus_new')
+
+    >>> # Only the aggregated series
+    >>> s = aggregate_columns(df, ['A','B','E'], return_mode='new_only')
+    """
+    # ---- Validation ----
+    if axis not in (0, 1):
+        raise ValueError("axis must be 0 or 1.")
+
+    # Deduplicate preserving order
+    seen = set()
+    cols = [c for c in cols_to_aggregate if not (c in seen or seen.add(c))]
+
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise KeyError(f"Columns not found in DataFrame: {missing}")
+
+    if method not in {"sum", "mean"}:
+        raise ValueError("Only 'sum' and 'mean' are supported.")
+
+    if return_mode not in {"append", "others_plus_new", "new_only"}:
+        raise ValueError("return_mode must be one of {'append', 'others_plus_new', 'new_only'}.")
+
+    # ---- Aggregate ----
+    if method == "sum":
+        agg = df[cols].sum(axis=axis)
+    else:  # method == "mean"
+        agg = df[cols].mean(axis=axis)
+
+    # ---- Shape the output according to return_mode ----
+    if return_mode == "new_only":
+        if new_col_name is None:
+            return agg  # Series
+        else:
+            return agg.to_frame(name=new_col_name)  # single-col DF
+
+    # Build the new column as DataFrame to concat
+    col_name = new_col_name or f"aggregated__{method}__{len(cols)}cols"
+    agg_df = agg.to_frame(name=col_name)
+
+    if return_mode == "append":
+        return pd.concat([df, agg_df], axis=1)
+
+    # return_mode == "others_plus_new"
+    remaining = df.drop(columns=cols)
+    return pd.concat([remaining, agg_df], axis=1)
