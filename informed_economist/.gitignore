@@ -15,7 +15,7 @@ __pycache__/
 #*.ipynb
 
 # Datos (no versionar crudos ni derivados pesados)
-data/raw/
+#data/raw/
 #data/interim/
 #data/reports_html/
 
@@ -27,3 +27,4 @@ data/raw/
 Thumbs.db
 .vscode/
 
+.venv/
