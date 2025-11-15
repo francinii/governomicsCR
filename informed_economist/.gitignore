@@ -10,9 +10,7 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
-
-# Notebooks (ignorar todos los .ipynb)
-#*.ipynb
+*/.ipynb_checkpoints/
 
 # Datos (no versionar crudos ni derivados pesados)
 #data/raw/
