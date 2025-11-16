@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.log
 
+# Eliminar 
+eliminar/
 # IDE
 .vscode/
 .idea/

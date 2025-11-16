@@ -10,5 +10,10 @@ ADMINISTRATION_PERIOD_YEARS = int(os.getenv("ADMINISTRATION_PERIOD_YEARS", 4))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-print(f"DEBUG: GROQ_API_KEY loaded: {GROQ_API_KEY}") # Temporary debug line
-
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+TOKEN_LIMIT = int(os.getenv("TOKEN_LIMIT", 4096))
+SPENT_DATA_RELATIVE_PATH = os.getenv("SPENT_DATA_RELATIVE_PATH", "data/datasets/pib_yoy_componentes_gasto.txt")
+INDUSTRY_DATA_RELATIVE_PATH = os.getenv("INDUSTRY_DATA_RELATIVE_PATH", "data/datasets/pib_yoy_industrias.txt")
+REGIMEN_DATA_RELATIVE_PATH = os.getenv("REGIMEN_DATA_RELATIVE_PATH", "data/datasets/pib_yoy_regimen.txt")
+SECTORS_DATA_RELATIVE_PATH = os.getenv("SECTORS_DATA_RELATIVE_PATH", "data/datasets/pib_yoy_sectores.txt")
+INTERANUAL_GROWTH_DATA_RELATIVE_PATH = os.getenv("INTERANUAL_GROWTH_DATA_RELATIVE_PATH", "data/datasets/pib_yoy.txt")

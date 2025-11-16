@@ -1,0 +1,6 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "builder": "app.pipelines.pib_report_pipeline:pib_report_pipeline"
+  }
+}
