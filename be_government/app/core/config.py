@@ -10,5 +10,6 @@ ADMINISTRATION_PERIOD_YEARS = int(os.getenv("ADMINISTRATION_PERIOD_YEARS", 4))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-print(f"DEBUG: GROQ_API_KEY loaded: {GROQ_API_KEY}") # Temporary debug line
+TOKEN_LIMIT = int(os.getenv("TOKEN_LIMIT", 4096))
+SPENT_DATA_RELATIVE_PATH = os.getenv("SPENT_DATA_RELATIVE_PATH", "data/datasets/pib_yoy_componentes_gasto.txt")
 
