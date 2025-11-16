@@ -57,15 +57,19 @@ class LLMClientFactory:
         """
         
         if provider == ModelProvider.OPENAI:
-            # Importación dinámica: Solo importamos el cliente de OpenAI 
-            # si el usuario realmente lo pidió.
             try:
                 from openai_client import OpenAIClient
             except ImportError:
-                # Maneja el caso donde el archivo se ejecuta directamente
-                from .openai_client import OpenAIClient
-                
+                from .openai_client import OpenAIClient                
             return OpenAIClient(config=config)
+        
+        elif provider == ModelProvider.GOOGLE:
+            try:
+                from gemini_client import GeminiClient
+            except ImportError:
+                # Maneja el caso donde el archivo se ejecuta directamente
+                from .gemini_client import GeminiClient                
+            return GeminiClient(config=config)
 
         # --- Punto de Extensión ---
         # Si quisieras añadir Anthropic, solo crearías 'anthropic_client.py'

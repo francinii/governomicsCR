@@ -63,31 +63,31 @@ class ReportPipeline:
         if agent_type == "spent":
             spent_context = context.get("spent", "")
             response = self.report_spent_agent.run(question, context=spent_context)
-            response = '......... Comentado por cuestiones monetarias .........'
+            #response = '......... Comentado por cuestiones monetarias .........'
             return {"spent_response": response}
 
         elif agent_type == "industry":
             industry_context = context.get("industry", "")
-            #response = self.report_industry_agent.run(question, context=industry_context)
-            response = '......... Comentado por cuestiones monetarias .........'
+            response = self.report_industry_agent.run(question, context=industry_context)
+            #response = '......... Comentado por cuestiones monetarias .........'
             return {"industry_response": response}
 
         elif agent_type == "regimen":
             regimen_context = context.get("regimen", "")
-            #response = self.report_regimen_agent.run(question, context=regimen_context)
-            response = '......... Comentado por cuestiones monetarias .........'
+            response = self.report_regimen_agent.run(question, context=regimen_context)
+            #response = '......... Comentado por cuestiones monetarias .........'
             return {"regimen_response": response}
 
         elif agent_type == "sectors":
             sectors_context = context.get("sectors", "")
-            #response = self.report_sectors_agent.run(question, context=sectors_context)
-            response = '......... Comentado por cuestiones monetarias .........'
+            response = self.report_sectors_agent.run(question, context=sectors_context)
+            #response = '......... Comentado por cuestiones monetarias .........'
             return {"sectors_response": response}
 
         elif agent_type == "growth_interanual":
             growth_interanual_context = context.get("growth_interanual", "")
-            #response = self.report_growth_interanual_agent.run(question, context=growth_interanual_context)
-            response = '......... Comentado por cuestiones monetarias .........'
+            response = self.report_growth_interanual_agent.run(question, context=growth_interanual_context)
+            #response = '......... Comentado por cuestiones monetarias .........'
             return {"growth_interanual_response": response}
 
         elif agent_type == "completed":
@@ -97,6 +97,19 @@ class ReportPipeline:
             regimen_response = state.get("regimen_response", "")
             sectors_response = state.get("sectors_response", "")
             growth_interanual_response = state.get("growth_interanual_response", "")
+
+
+            print("------- REPORTES GENERADOS -----------")
+            print("----------  REPORTE DE GASTO -----------")
+            print(spent_response)
+            print("----------  REPORTE DE INDUSTRIA -----------")
+            print(industry_response)
+            print("----------  REPORTE DE SECTORES -----------")
+            print(sectors_response)
+            print("----------  REPORTE DE REGIMEN -----------")
+            print(regimen_response)
+            print("----------  REPORTE DE CRECIMIENTO -----------")
+            print(growth_interanual_response)
             
             # Construir el diccionario de reports con las claves que espera el agente completado
             reports = {
@@ -106,11 +119,14 @@ class ReportPipeline:
                 "sectors": sectors_response,
                 "growth_interanual": growth_interanual_response
             }
-            
+            response = self.complete_agent.run(user_question=question, 
+                                                csv_context_data='', 
+                                                reports=reports)            
             # Combinar todos los contextos CSV para metadatos            
             context = state.get("context", {})
- 
-            return {"response": reports['gasto']}
+            print("------- REPORTES FINAL GENERADO -----------")
+            print(response)
+            return {"response": response}
         else:
             return {"response": ""}
 
@@ -124,8 +140,7 @@ class ReportPipeline:
             "industry_response": "",
             "regimen_response": "",
             "sectors_response": "",
-            "growth_interanual_response": "",
-            
+            "growth_interanual_response": "",            
         }
         final_state = self.app.invoke(initial_state)
         return final_state["response"]

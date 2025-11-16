@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from app.clients.llm_client import LLMClientFactory
-from app.models.enums.ai_model_enums import ModelProvider
+from app.models.enums.ai_model_enums import ModelProvider, OpenAIModels
 from app.prompts.spent_prompt import SPENT_PROMPT
 from app.prompts.industry_prompt import INDUSTRY_PROMPT
 from app.prompts.join_report_prompt import SYSTEM_JOIN_REPORT_PROMPT, HUMAN_JOIN_REPORT_PROMPT
@@ -40,7 +40,7 @@ class BaseReportAgent(ABC):
         """
         print(f"--- Agente de Reporte de {self.agent_name} en ejecución ---")
         print("="*40 + "\n")
-        print(f"Contexto recibido: {context}")
+        #print(f"Contexto recibido: {context}")
         print("="*40 + "\n")
         
         if context:
@@ -104,7 +104,7 @@ class ReportCompletedAgent:
             human_prompt_template: La plantilla de string para el HumanMessage 
                                      (HUMAN_JOIN_REPORT_PROMPT).
         """
-        self.llm_client = LLMClientFactory.create_client(ModelProvider.OPENAI)
+        self.llm_client = LLMClientFactory.create_client(ModelProvider.OPENAI, config={"model":OpenAIModels.GPT_4_1.value})
         
         # 1. Almacenamos las plantillas recibidas
         self.system_prompt = SYSTEM_JOIN_REPORT_PROMPT

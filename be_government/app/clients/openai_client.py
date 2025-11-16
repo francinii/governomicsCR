@@ -33,7 +33,7 @@ class OpenAIClient(LLMClient):
         # 1. Establecer valores por defecto para los parámetros de ChatOpenAI
         client_params = {
             "api_key": os.getenv("OPENAI_API_KEY"),
-            "model": OpenAIModels.GPT_4_1_MINI_EXTENDED.value,
+            "model": OpenAIModels.GPT_CURRENT_USE.value,
             "timeout": 220,
             "temperature": 0.7,  # Un default razonable
             "max_tokens": TOKEN_LIMIT # Add max_tokens here
