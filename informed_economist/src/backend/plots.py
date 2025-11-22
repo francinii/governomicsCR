@@ -808,6 +808,7 @@ def plot_admin_sector_dumbbell(
     x_range: Optional[Tuple[float, float]] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
+    title: str = "Actividad con mayor y menor crecimiento promedio del PIB por Administración",
     title_color: str = "black",
     axis_label_color: str = "black",
     tick_color: str = "black",
@@ -939,7 +940,7 @@ def plot_admin_sector_dumbbell(
     # --- 5) Layout ---
     layout_kwargs = dict(
         title=dict(
-            text="Actividad con mayor y menor crecimiento promedio del PIB por administración",
+            text=title,
             font=dict(color=title_color),
         ),
         xaxis_title=dict(text="Crecimiento promedio (%)", font=dict(color=axis_label_color)),
@@ -992,6 +993,7 @@ def plot_activity_dumbbell(
     x_range: Optional[Tuple[float, float]] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
+    title: str = "Administración con mayor y menor crecimiento interanual promedio por Actividad Aconómica",
     title_color: str = "black",
     axis_label_color: str = "black",
     tick_color: str = "black",
@@ -1141,7 +1143,7 @@ def plot_activity_dumbbell(
     # --- Layout general (armonizado) ---
     layout_kwargs = dict(
         title=dict(
-            text="Administración con mayor y menor crecimiento interanual promedio por actividad económica",
+            text=title,
             font=dict(color=title_color),
         ),
         xaxis_title=dict(
