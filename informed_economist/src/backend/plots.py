@@ -812,151 +812,60 @@ def plot_admin_sector_dumbbell(
     axis_label_color: str = "black",
     tick_color: str = "black",
     legend_color: str = "black",
+    shade_by_zero: bool = True,
+    neg_bg_color: str = "rgba(255, 200, 200, 0.25)",   # rojo pastel muy tenue
+    pos_bg_color: str = "rgba(200, 255, 200, 0.25)",   # verde pastel muy tenue
 ) -> go.Figure:
     """
-    Plot a dumbbell-style comparison of the economic activity with the highest 
-    and lowest average GDP growth for each administration.
-
-    This function visualizes, for each administration, the activity with the 
-    maximum and minimum average interannual GDP growth. The line connecting both 
-    points represents the "growth spread" within the administration.
-
-    Parameters
-    ----------
-    summary : pd.DataFrame
-        A DataFrame **indexed by administration name**, containing **exactly** 
-        the following four columns:
-
-        - 'Max_Activity' : str  
-            Name of the activity with the highest average growth.
-        - 'Max_Growth'   : float  
-            Growth value associated with 'Max_Activity'.
-        - 'Min_Activity' : str  
-            Name of the activity with the lowest average growth.
-        - 'Min_Growth'   : float  
-            Growth value associated with 'Min_Activity'.
-
-        Example structure:
-            index: ["Arias", "Chaves", "Rodríguez", ...]
-            columns:
-                Max_Activity | Max_Growth | Min_Activity | Min_Growth
-                -------------------------------------------------------
-                "Info."      |    7.3     |   "Agro"     |   0.4
-                "Prof."      |    8.0     |   "Adm. P."  |   0.6
-                ...
-
-        IMPORTANT:
-        - The index values of `summary` must match the possible values in `admin_order`.
-        - If the activity names are to appear short or formatted, they must be 
-          transformed **before** calling this function.
-
-    admin_order : list of str
-        A list specifying the **vertical order** (top-to-bottom) in which the 
-        administrations should appear on the Y-axis.
-        Example:
-            ["Arias", "Chaves", "Rodríguez", "Pacheco", "Chinchilla", 
-             "Olsen", "Solís", "Alvarado"]
-
-        Only elements that exist in `summary.index` will be plotted.
-
-    presidential_colors : dict
-        Dictionary mapping administration labels (index values of `summary`)
-        to color codes (e.g. hex strings). Example:
-
-        >>> presidential_colors = {
-        ...     "Olsen": "#fb6a4a",
-        ...     "Rodríguez": "#fdd0a2",
-        ...     "Pacheco": "#9467bd",
-        ...     "Arias": "#74c476",
-        ...     "Chinchilla": "#fdae6b",
-        ...     "Solís": "#c7c7c7",
-        ...     "Alvarado": "#e377c2",
-        ...     "Chaves": "#6baed6",
-        ... }
-
-        These colors are used for the dumbbell lines and the markers inside
-        the chart (one color per administration). Legend symbols are kept neutral.
-
-    x_range : tuple or list, optional
-        Custom range for the X-axis, e.g. `(-5, 22)`.  
-        If None, Plotly chooses the range automatically.
-
-    width, height : int, optional
-        Size in pixels of the resulting figure.
-
-    title_color : str
-        Color of the plot title text.
-
-    axis_label_color : str
-        Color used for the X-axis and Y-axis title labels.
-
-    tick_color : str
-        Color of the tick labels on both axes.
-
-    legend_color : str
-        Color of the symbols used in the legend for the minimum and maximum 
-        growth markers. The default (`black`) avoids confusing legend symbols 
-        with presidential colors used inside the chart.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-        A fully configured Plotly figure.
-
-    Notes
-    -----
-    - This function **does not modify activity names or administration names**.
-      Any formatting (e.g. short labels) must be applied to `summary` beforehand.
-    - Inside the chart, each administration is consistently colored using
-      `presidential_colors[admin]`.
-    - Legend markers are drawn as separate dummy traces with a neutral color
-      (`legend_color`).
-
-    Example
-    -------
-    >>> # 1. Example 'summary' DataFrame created from raw GDP sector data
-    >>> summary = pd.DataFrame({
-    ...     "Max_Activity": ["Info.", "Prof.", "Agro"],
-    ...     "Max_Growth":   [7.3, 8.0, 6.2],
-    ...     "Min_Activity": ["Agro", "Adm. P.", "Const."],
-    ...     "Min_Growth":   [0.4, 0.6, -1.2],
-    ... }, index=["Arias", "Chaves", "Rodríguez"])
-    ...
-    >>> presidential_colors = {
-    ...     "Arias": "#74c476",
-    ...     "Chaves": "#6baed6",
-    ...     "Rodríguez": "#fdd0a2",
-    ... }
-    ...
-    >>> admin_order = ["Arias", "Chaves", "Rodríguez"]
-    ...
-    >>> fig = plot_admin_sector_dumbbell(
-    ...     summary,
-    ...     admin_order=admin_order,
-    ...     presidential_colors=presidential_colors,
-    ...     x_range=(-5, 10),
-    ...     width=1100,
-    ...     height=650,
-    ...     title_color="black",
-    ...     axis_label_color="gray",
-    ...     tick_color="dimgray",
-    ... )
-    >>> fig.show()
+    Dumbbell chart showing, for each administration, the economic activity with 
+    the highest and lowest average interannual GDP growth.
     """
 
-    # Filtra admins existentes respetando el orden dado
+    # --- Filtra admins en el orden dado ---
     admins = [a for a in admin_order if a in summary.index]
     df_plot = summary.loc[admins].copy()
 
-    # Los nombres en el eje Y serán exactamente los que el usuario pase
     y_labels = admins
-
-    # Colores presidenciales en el orden dado
     admin_colors = [presidential_colors.get(a, "#444444") for a in admins]
+
+    # --- Determinar rango X si no se pasó ---
+    if x_range is None:
+        xmin = df_plot["Min_Growth"].min()
+        xmax = df_plot["Max_Growth"].max()
+        if xmax == xmin:
+            padding = 1.0
+        else:
+            padding = (xmax - xmin) * 0.10
+        x_range = (xmin - padding, xmax + padding)
 
     fig = go.Figure()
 
-    # --- 1) Líneas entre min y max por administración ---
+    # === Fondo dividido por cero (rojo < 0, verde > 0) ===
+    if shade_by_zero:
+        # banda negativa (si hay parte negativa)
+        if x_range[0] < 0:
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=x_range[0], x1=min(0, x_range[1]),
+                y0=0, y1=1,
+                fillcolor=neg_bg_color,
+                line=dict(width=0),
+                layer="below",
+            )
+        # banda positiva (si hay parte positiva)
+        if x_range[1] > 0:
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=max(0, x_range[0]), x1=x_range[1],
+                y0=0, y1=1,
+                fillcolor=pos_bg_color,
+                line=dict(width=0),
+                layer="below",
+            )
+
+    # --- 1) Líneas min → max por administración ---
     for admin, color in zip(admins, admin_colors):
         row = df_plot.loc[admin]
         fig.add_trace(
@@ -970,7 +879,7 @@ def plot_admin_sector_dumbbell(
             )
         )
 
-    # --- 2) Punto mínimo (círculo, color presidencial, sin leyenda) ---
+    # --- 2) Punto mínimo (círculo) ---
     fig.add_trace(
         go.Scatter(
             x=df_plot["Min_Growth"],
@@ -988,7 +897,7 @@ def plot_admin_sector_dumbbell(
         )
     )
 
-    # --- 3) Punto máximo (cuadrado, color presidencial, sin leyenda) ---
+    # --- 3) Punto máximo (cuadrado) ---
     fig.add_trace(
         go.Scatter(
             x=df_plot["Max_Growth"],
@@ -1006,7 +915,7 @@ def plot_admin_sector_dumbbell(
         )
     )
 
-    # --- 4) Leyenda neutra (símbolos negros por defecto) ---
+    # --- 4) Leyenda neutra ---
     fig.add_trace(
         go.Scatter(
             x=[None],
@@ -1027,7 +936,7 @@ def plot_admin_sector_dumbbell(
         )
     )
 
-    # --- Layout general ---
+    # --- 5) Layout ---
     layout_kwargs = dict(
         title=dict(
             text="Actividad con mayor y menor crecimiento promedio del PIB por administración",
@@ -1036,8 +945,14 @@ def plot_admin_sector_dumbbell(
         xaxis_title=dict(text="Crecimiento promedio (%)", font=dict(color=axis_label_color)),
         yaxis_title=dict(text="Administración", font=dict(color=axis_label_color)),
         template="plotly_white",
-        margin=dict(l=120, r=120, t=80, b=40),
-        legend=dict(orientation="h", x=0.5, xanchor="center", y=1.1),
+        margin=dict(l=120, r=120, t=80, b=80),
+        legend=dict(
+            orientation="h",
+            x=0.5,
+            xanchor="center",
+            y=-0.20,
+            yanchor="top",
+        ),
     )
 
     if width is not None:
@@ -1047,7 +962,12 @@ def plot_admin_sector_dumbbell(
 
     fig.update_layout(**layout_kwargs)
 
-    # Eje Y: respeta admin_order de arriba hacia abajo
+    # Color del texto de la leyenda
+    fig.update_layout(
+        legend_font=dict(color="steelblue", size=12)
+    )
+
+    # --- Ejes ---
     fig.update_yaxes(
         categoryorder="array",
         categoryarray=y_labels,
@@ -1055,9 +975,216 @@ def plot_admin_sector_dumbbell(
         tickfont=dict(color=tick_color),
     )
 
-    # Eje X: ticks + rango
-    fig.update_xaxes(tickfont=dict(color=tick_color))
-    if x_range is not None:
-        fig.update_xaxes(range=list(x_range))
+    fig.update_xaxes(
+        tickfont=dict(color=tick_color),
+        range=list(x_range),
+        zeroline=False,
+        zerolinecolor="gray",
+        zerolinewidth=1,
+    )
 
     return fig
+
+
+def plot_activity_dumbbell(
+    summary: pd.DataFrame,
+    presidential_colors: Dict[str, str],
+    x_range: Optional[Tuple[float, float]] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    title_color: str = "black",
+    axis_label_color: str = "black",
+    tick_color: str = "black",
+    legend_color: str = "black",
+    line_color: str = "#1f77b4",
+    line_width: int = 4,
+    shade_by_zero: bool = True,
+    neg_bg_color: str = "rgba(255, 200, 200, 0.25)",   # rojo pastel muy tenue
+    pos_bg_color: str = "rgba(200, 255, 200, 0.25)",   # verde pastel muy tenue
+) -> go.Figure:
+    """
+    Plot a dumbbell-style comparison of the administration with the highest
+    and the lowest average GDP growth for each economic activity.
+
+    The background canvas is optionally shaded:
+    - x < 0 in a soft red (neg_bg_color)
+    - x > 0 in a soft green (pos_bg_color)
+    """
+
+    # Copia para no tocar el original
+    df_plot = summary.copy()
+
+    # Etiquetas del eje Y = índice del DataFrame
+    activities = list(df_plot.index)
+
+    # Rango X automático si no se pasa
+    if x_range is None:
+        xmin = df_plot["Tasa_menor"].min()
+        xmax = df_plot["Tasa_mayor"].max()
+        if xmax == xmin:
+            padding = 1.0
+        else:
+            padding = (xmax - xmin) * 0.1
+        x_range = (xmin - padding, xmax + padding)
+
+    fig = go.Figure()
+
+    # --- (0) Pintar lienzo según signo (rojo < 0, verde > 0) ---
+    if shade_by_zero:
+        # Zona negativa
+        if x_range[0] < 0:
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=x_range[0],
+                x1=min(0, x_range[1]),
+                y0=0,
+                y1=1,
+                fillcolor=neg_bg_color,
+                line=dict(width=0),
+                layer="below",
+            )
+        # Zona positiva
+        if x_range[1] > 0:
+            fig.add_shape(
+                type="rect",
+                xref="x", yref="paper",
+                x0=max(0, x_range[0]),
+                x1=x_range[1],
+                y0=0,
+                y1=1,
+                fillcolor=pos_bg_color,
+                line=dict(width=0),
+                layer="below",
+            )
+
+    # --- 1) Líneas horizontales min-max (estilo unificado) ---
+    for act, row in df_plot.iterrows():
+        fig.add_trace(
+            go.Scatter(
+                x=[row["Tasa_menor"], row["Tasa_mayor"]],
+                y=[act, act],
+                mode="lines",
+                line=dict(color=line_color, width=line_width),
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+
+    # Colores por administración para los puntos
+    min_colors = [
+        presidential_colors.get(admin, "#444444")
+        for admin in df_plot["Admin_menor"]
+    ]
+    max_colors = [
+        presidential_colors.get(admin, "#444444")
+        for admin in df_plot["Admin_mayor"]
+    ]
+
+    # --- 2) Punto mínimo (círculo, color presidencial, sin leyenda propia) ---
+    fig.add_trace(
+        go.Scatter(
+            x=df_plot["Tasa_menor"],
+            y=activities,
+            mode="markers+text",
+            marker=dict(size=10, symbol="circle", color=min_colors),
+            text=[
+                f"{admin} {g:.1f}%"
+                for admin, g in zip(df_plot["Admin_menor"], df_plot["Tasa_menor"])
+            ],
+            textposition="middle left",
+            textfont=dict(size=11, color="gray"),
+            hovertemplate="<b>%{y}</b><br>%{text}<extra></extra>",
+            showlegend=False,
+        )
+    )
+
+    # --- 3) Punto máximo (cuadrado, color presidencial, sin leyenda propia) ---
+    fig.add_trace(
+        go.Scatter(
+            x=df_plot["Tasa_mayor"],
+            y=activities,
+            mode="markers+text",
+            marker=dict(size=12, symbol="square", color=max_colors),
+            text=[
+                f"{admin} {g:.1f}%"
+                for admin, g in zip(df_plot["Admin_mayor"], df_plot["Tasa_mayor"])
+            ],
+            textposition="middle right",
+            textfont=dict(size=11, color="black"),
+            hovertemplate="<b>%{y}</b><br>%{text}<extra></extra>",
+            showlegend=False,
+        )
+    )
+
+    # --- 4) Leyenda neutra consistente con plot_admin_sector_dumbbell ---
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(symbol="circle", size=10, color=legend_color),
+            name="Administración con menor crecimiento",
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(symbol="square", size=12, color=legend_color),
+            name="Administración con mayor crecimiento",
+        )
+    )
+
+    # --- Layout general (armonizado) ---
+    layout_kwargs = dict(
+        title=dict(
+            text="Administración con mayor y menor crecimiento interanual promedio por actividad económica",
+            font=dict(color=title_color),
+        ),
+        xaxis_title=dict(
+            text="Crecimiento promedio (%)",
+            font=dict(color=axis_label_color),
+        ),
+        yaxis_title=dict(
+            text="Actividad económica",
+            font=dict(color=axis_label_color),
+        ),
+        template="plotly_white",
+        margin=dict(l=120, r=120, t=100, b=40),
+        legend=dict(
+            orientation="h",
+            x=0.5,
+            xanchor="center",
+            y=-0.10,        # abajo del gráfico
+            yanchor="top",
+        ),
+    )
+
+    if width is not None:
+        layout_kwargs["width"] = width
+    if height is not None:
+        layout_kwargs["height"] = height
+
+    fig.update_layout(**layout_kwargs)
+
+    # Eje Y: categorías en el orden del índice
+    fig.update_yaxes(
+        categoryorder="array",
+        categoryarray=activities,
+        autorange="reversed",  # arriba la primera actividad
+        tickfont=dict(color=tick_color),
+    )
+
+    # Eje X: ticks + rango, SIN zeroline
+    fig.update_xaxes(
+        tickfont=dict(color=tick_color),
+        range=list(x_range),
+        zeroline=False,
+    )
+
+    return fig
+
+
