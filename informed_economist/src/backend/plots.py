@@ -170,85 +170,67 @@ def plot_timeseries_bars(
 
     return fig
 
-def plot_bar_subplots_by_administration(df, variables, colors, title, y_title = "Promedio (%)", x_title = "Posiciones", show = False):
+def plot_bar_subplots_by_administration(
+    df, 
+    variables, 
+    colors, 
+    title, 
+    y_title="Promedio (%)", 
+    x_title="Posiciones",
+    show=False,
+    fig_width: int = None,
+    fig_height: int = None
+):
     """
     Generate grouped bar charts by presidential administration for one or more variables.
+    Now supports controlling figure width and height.
 
     Parameters
     ----------
     df : pandas.DataFrame
-        A DataFrame where:
-            - The index contains presidential administrations (e.g., "Alvarado", "Solís", ...).
-            - The columns contain numerical variables to plot (e.g., "Consumo Hogares", "Inversión").
-            Each cell should represent a summary statistic (e.g., mean, median, percentile, etc.)
-            of the variable for the given administration.
-
-        Example structure:
-                          Consumo Hogares  Consumo Gobierno  Inversión  Exportaciones  Importaciones
-        Administración
-        Alvarado                   64.2              14.8       19.5           34.7           33.8
-        Solís                      65.1              14.5       18.8           35.2           34.1
         ...
 
-    variables : list of str
-        List of column names from `df` to be plotted as subplots.
-    title : str
-        Title of the entire figure.
-    y_title : str, optional (default="Promedio (%)")
-        Label for the y-axis (only shown on the first subplot).
-    show : bool, optional (default=False)
-        If True, immediately displays the figure. If False, only returns the figure.
+    fig_width : int, optional
+        Width of the figure in pixels. If None, defaults to 900.
 
-    Returns
-    -------
-    fig : plotly.graph_objs._figure.Figure
-        A Plotly Figure object with subplots of bar charts. Each subplot corresponds
-        to one variable in `variables`, and bars are ranked from highest to lowest
-        across administrations. Bar colors are consistent by administration and linked
-        in the legend for interactive filtering.
-
-    Notes
-    -----
-    - Bars are ordered from highest to lowest value per variable.
-    - The x-axis shows the ranking position (1, 2, 3, ...), not the administration names,
-      to avoid redundancy. Administration names are instead displayed in the legend and tooltips.
-    - Colors must be provided via a global `colors` dictionary mapping administration names to hex codes.
+    fig_height : int, optional
+        Height of the figure in pixels. If None, defaults to 500.
     """
+
     fig = make_subplots(
-        rows=1, cols=len(variables),
+        rows=1,
+        cols=len(variables),
         subplot_titles=variables,
         horizontal_spacing=0.04
     )
 
     ymax = (df.max().max()) * 1.2
-
-    # Para controlar la leyenda: trackeamos si ya agregamos cada presidente
     legend_added = set()
 
     for idx, var in enumerate(variables, start=1):
-        # Orden de mayor a menor y construcción de ranking 1..N
         s = df[var].sort_values(ascending=False)
-        pres_labels = s.index.tolist()          # nombres de presidentes (para leyenda/hover)
+
+        pres_labels = s.index.tolist()
         y_vals = s.values.tolist()
-        positions = list(range(1, len(s) + 1))  # 1, 2, 3, ...
+        positions = list(range(1, len(s) + 1))
         bar_colors = [colors.get(lbl, "#4E79A7") for lbl in pres_labels]
 
         for pos, lbl, y, c in zip(positions, pres_labels, y_vals, bar_colors):
             fig.add_trace(
                 go.Bar(
-                    x=[str(pos)],               # mostramos posición en el eje X
+                    x=[str(pos)],
                     y=[y],
                     marker_color=c,
                     name=lbl,
-                    legendgroup=lbl,            # vincula todas las trazas del mismo presidente
+                    legendgroup=lbl,
                     hovertemplate=(
                         f"<b>{lbl}</b><br>{var}: {y:.2f}"
                         f"<br>Posición: {pos}<extra></extra>"
                     ),
                     showlegend=lbl not in legend_added,
-                    text=[f"{y:.1f}"],          # valor sobre la barra
+                    text=[f"{y:.1f}"],
                     textposition="outside",
-                    textfont=dict(size=11, color = 'steelblue')
+                    textfont=dict(size=11, color='steelblue')
                 ),
                 row=1, col=idx
             )
@@ -257,25 +239,27 @@ def plot_bar_subplots_by_administration(df, variables, colors, title, y_title = 
         fig.update_xaxes(
             row=1, col=idx,
             tickangle=0,
-            tickfont=dict(size=12, color="steelblue"), # color y tamaño de los valores del eje
+            tickfont=dict(size=12, color="steelblue"),
             showticklabels=True,
-            title_text = x_title,
-            title_font=dict(size=12, color="salmon"),  # color y tamaño del título del eje
-            
+            title_text=x_title,
+            title_font=dict(size=12, color="salmon"),
         )
+
         fig.update_yaxes(
             row=1, col=idx,
             title_text=y_title if idx == 1 else None,
             title_font=dict(size=13, color="salmon"),
-            showgrid=True, gridcolor="#FAF7F7",
+            showgrid=True,
+            gridcolor="#FAF7F7",
             range=[0, ymax],
             showticklabels=False
         )
 
+    # Uniformar estilo de títulos de subplots
     for anno in fig['layout']['annotations']:
         anno['font'] = dict(size=13.5, color="salmon")
 
-    # --- Layout con leyenda horizontal abajo ---
+    # Layout general
     fig.update_layout(
         template="plotly_white",
         title=dict(
@@ -284,8 +268,8 @@ def plot_bar_subplots_by_administration(df, variables, colors, title, y_title = 
             font=dict(size=18, color="steelblue")
         ),
         bargap=0.1,
-        width=900,
-        height=500,
+        width=fig_width if fig_width is not None else 900,
+        height=fig_height if fig_height is not None else 500,
         margin=dict(l=60, r=30, t=80, b=100),
         legend=dict(
             orientation="h",
@@ -299,7 +283,7 @@ def plot_bar_subplots_by_administration(df, variables, colors, title, y_title = 
 
     if show:
         fig.show()
-    
+
     return fig
 
 def plot_stacked_bars(

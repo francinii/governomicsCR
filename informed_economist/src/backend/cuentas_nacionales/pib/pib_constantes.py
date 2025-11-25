@@ -31,6 +31,24 @@ class ConstantesPIB:
     ENSE_SALUD_ASISTENCIA = "Ense_Salud_Asistencia_Social"
     OTRAS_ACTIVIDADES = "Otras_Actividades"
 
+    SHORT_NAMES = {
+        "PIB_Agricultura_Silvicultura_Pesca_TC": "Agro",
+        "PIB_Minas_Canteras_TC": "Minas",
+        "PIB_Manufactura_TC": "Manuf.",
+        "PIB_Electricidad_Agua_Saneamiento_TC": "Energía",
+        "PIB_Construccion_TC": "Const.",
+        "PIB_Comercio_TC": "Come.",
+        "PIB_Transporte_Almacenamiento_TC": "Transp.",
+        "PIB_Hoteles_Restaurantes_TC": "Turismo",
+        "PIB_Informacion_Comunicaciones_TC": "Info.",
+        "PIB_Financieras_Seguros_TC": "Finanzas",
+        "PIB_Inmobiliario_TC": "Inmob.",
+        "PIB_Actividades_Profesionales_TC": "Prof.",
+        "PIB_Administracion_Publica_TC": "Adm. P.",
+        "PIB_Ense_Salud_Asistencia_Social_TC": "Educ & Salud",
+        "PIB_Otras_Actividades_TC": "Otros Serv.",
+    }
+
     INDUSTRIAS = [
         AGRICULTURA, MINAS_CANTERAS, MANUFACTURA, ELECTRICIDAD_AGUA,
         CONSTRUCCION, COMERCIO, TRANSPORTE, HOTELES_RESTAURANTES,
@@ -83,3 +101,5 @@ class ConstantesPIB:
     COMBUSTIBLES = "Combustibles"
     SIN_COMBUSTIBLES = "Sin_Combustibles"
     TERMINOS_INTERCAMBIO = "Terminos_Intercambio"
+
+
