@@ -22,3 +22,17 @@ async def chat_report(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
 
+
+@router.post("/general_information", response_model=ChatResponse)
+async def chat_general_information(
+    request: Request,
+    chat_request: ChatRequest,
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    try:
+        response = chat_service.general_information(chat_request.question)
+        return ChatResponse(response=response)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
