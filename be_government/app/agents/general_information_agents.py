@@ -50,12 +50,10 @@ class BaseGeneralInformationAgent(ABC):
             context_str = json.dumps(context, ensure_ascii=False, indent=2)
         else:
             context_str = str(context)
-
         if context_str:
             system_prompt_with_context = self.system_prompt.replace("{{#context#}}", context_str)
         else:
             system_prompt_with_context = self.system_prompt
-
         full_prompt = f"{system_prompt_with_context}\n\nPregunta del usuario: {input_question}"
         response = self.llm_client.generate_response(full_prompt)
         return response

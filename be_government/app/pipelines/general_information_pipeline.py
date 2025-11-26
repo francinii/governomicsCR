@@ -1,13 +1,7 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from app.agents.general_information_agents import GeneralInformationAgent
-
-
-class GeneralInformationState(TypedDict):
-    question: str
-    response: str
-    context: dict  # Changed to dict to match usage
-    general_information_agent: str  # Store spent agent response
+from app.models.states_langraph_models import GeneralInformationState
 
 class GeneralInformationPipeline:
     def __init__(self):
@@ -35,11 +29,6 @@ class GeneralInformationPipeline:
 
     def run(self, question: str, context: dict = {}): # Add context parameter here
         print("--- Pipeline de Reporte en ejecución (Langgraph) ---")
-        initial_state = {
-            "question": question, 
-            "response": "", 
-            "context": context,
-            "general_information_agent": "",
-        }
+        initial_state = GeneralInformationState(question=question, context=context)
         final_state = self.app.invoke(initial_state)
         return final_state["response"]

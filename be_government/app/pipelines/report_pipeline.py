@@ -1,18 +1,7 @@
-from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from app.agents.report_agents import ReportCompletedAgent, ReportGrowthInteranualAgent, ReportRegimenAgent, ReportSectorsAgent, ReportSpentAgent, ReportIndustryAgent
-
-
-class ReportState(TypedDict):
-    question: str
-    response: str
-    context: dict  # Changed to dict to match usage
-    spent_response: str  # Store spent agent response
-    industry_response: str  # Store industry agent response
-    regimen_response: str  # Store regimen agent response
-    sectors_response: str  # Store sectors agent response
-    growth_interanual_response: str  # Store growth_interanual agent response
-
+from app.models.enums.ai_agent_enums import AgentType
+from app.models.states_langraph_models import ReportState
 
 class ReportPipeline:
     def __init__(self):
@@ -31,8 +20,6 @@ class ReportPipeline:
         workflow.add_node("agent_sectors_node", lambda state: self._call_agent(state, "sectors"))
         workflow.add_node("agent_growth_interanual_node", lambda state: self._call_agent(state, "growth_interanual"))
         workflow.add_node("agent_completed_node", lambda state: self._call_agent(state, "completed"))
-
-
         workflow.add_node("start", lambda state: state)
         workflow.set_entry_point("start")
         # Agents execute in parallel from start
@@ -60,64 +47,34 @@ class ReportPipeline:
         question = state["question"]
         context = state.get("context", {})
 
-        if agent_type == "spent":
-            spent_context = context.get("spent", "")
-            response = self.report_spent_agent.run(question, context=spent_context)
-            #response = '......... Comentado por cuestiones monetarias .........'
-            return {"spent_response": response}
+        # Mapeo de agentes y claves de respuesta
+        agent_map = [
+            (AgentType.SPENT.value, self.report_spent_agent, "spent_response"),
+            (AgentType.INDUSTRY.value, self.report_industry_agent, "industry_response"),
+            (AgentType.REGIMEN.value, self.report_regimen_agent, "regimen_response"),
+            (AgentType.SECTORS.value, self.report_sectors_agent, "sectors_response"),
+            (AgentType.GROWTH_INTERANUAL.value, self.report_growth_interanual_agent, "growth_interanual_response"),
+        ]
 
-        elif agent_type == "industry":
-            industry_context = context.get("industry", "")
-            response = self.report_industry_agent.run(question, context=industry_context)
-            #response = '......... Comentado por cuestiones monetarias .........'
-            return {"industry_response": response}
+        for key, agent, response_key in agent_map:
+            if agent_type == key:
+                agent_context = context.get(key, "")
+                response = agent.run(question, context=agent_context)
+                return {response_key: response}
 
-        elif agent_type == "regimen":
-            regimen_context = context.get("regimen", "")
-            response = self.report_regimen_agent.run(question, context=regimen_context)
-            #response = '......... Comentado por cuestiones monetarias .........'
-            return {"regimen_response": response}
-
-        elif agent_type == "sectors":
-            sectors_context = context.get("sectors", "")
-            response = self.report_sectors_agent.run(question, context=sectors_context)
-            #response = '......... Comentado por cuestiones monetarias .........'
-            return {"sectors_response": response}
-
-        elif agent_type == "growth_interanual":
-            growth_interanual_context = context.get("growth_interanual", "")
-            response = self.report_growth_interanual_agent.run(question, context=growth_interanual_context)
-            #response = '......... Comentado por cuestiones monetarias .........'
-            return {"growth_interanual_response": response}
-
-        elif agent_type == "completed":
-            # Obtener todas las respuestas de los agentes
-            spent_response = state.get("spent_response", "")
-            industry_response = state.get("industry_response", "")
-            regimen_response = state.get("regimen_response", "")
-            sectors_response = state.get("sectors_response", "")
-            growth_interanual_response = state.get("growth_interanual_response", "")
-
-
-            print("------- REPORTES GENERADOS -----------")
-            print("----------  REPORTE DE GASTO -----------")
-            print(spent_response)
-            print("----------  REPORTE DE INDUSTRIA -----------")
-            print(industry_response)
-            print("----------  REPORTE DE SECTORES -----------")
-            print(sectors_response)
-            print("----------  REPORTE DE REGIMEN -----------")
-            print(regimen_response)
-            print("----------  REPORTE DE CRECIMIENTO -----------")
-            print(growth_interanual_response)
+        if agent_type == AgentType.COMPLETED.value:  
+            responses = []
+            for key, agent, response_key in agent_map:   
+                responses.append(state.get(response_key, ""))     
+            for report in agent_map:
+                print(f"REPORTE DE {report[0]}: {state.get(report[2], '')}")
             
-            # Construir el diccionario de reports con las claves que espera el agente completado
             reports = {
-                "gasto": spent_response,
-                "industria": industry_response,
-                "regimen": regimen_response,
-                "sectors": sectors_response,
-                "growth_interanual": growth_interanual_response
+                "gasto": responses[0],
+                "industria": responses[1],
+                "regimen": responses[2],
+                "sectors": responses[3],
+                "growth_interanual": responses[4]
             }
             response = self.complete_agent.run(user_question=question, 
                                                 csv_context_data='', 
@@ -132,15 +89,6 @@ class ReportPipeline:
 
     def run(self, question: str, context: dict = {}): # Add context parameter here
         print("--- Pipeline de Reporte en ejecución (Langgraph) ---")
-        initial_state = {
-            "question": question, 
-            "response": "", 
-            "context": context,
-            "spent_response": "",
-            "industry_response": "",
-            "regimen_response": "",
-            "sectors_response": "",
-            "growth_interanual_response": "",            
-        }
+        initial_state = ReportState(question=question,context=context)
         final_state = self.app.invoke(initial_state)
         return final_state["response"]
