@@ -23,8 +23,8 @@ class GeneralInformationPipeline:
         print(f"--- Agente de Reporte ({agent_type}) en ejecución (Langgraph) ---")
         question = state["question"]
         context = state["context"]
-        general_information_agent_context = context.get("general_information_agent", "")
-        response = self.general_information_agent.run(question, context=general_information_agent_context)
+        #general_information_agent_context = context.get("general_information_agent", "")
+        response = self.general_information_agent.run(question, context=context)
         return {"response": response}      
 
     def run(self, question: str, context: dict = {}): # Add context parameter here

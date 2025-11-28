@@ -40,7 +40,11 @@ class ChatService:
         print("--- Iniciando agente de información general ---")
         try:
             context_data = {}
-            context_data["general_information"] = self.data_load_service.load_data(GENERAL_INFORMATION_DATA_RELATIVE_PATH)
+            context_data["spent"] = self.data_load_service.load_data(SPENT_DATA_RELATIVE_PATH)
+            context_data["industry"] = self.data_load_service.load_data(INDUSTRY_DATA_RELATIVE_PATH)
+            context_data["regimen"] = self.data_load_service.load_data(REGIMEN_DATA_RELATIVE_PATH)
+            context_data["sectors"] = self.data_load_service.load_data(SECTORS_DATA_RELATIVE_PATH)
+            context_data["growth_interanual"] = self.data_load_service.load_data(INTERANUAL_GROWTH_DATA_RELATIVE_PATH)            
             response = self.general_information_pipeline.run(question, context=context_data)
             print(f"Respuesta del agente de información general: {response}\n")
             return f"{response}\n"

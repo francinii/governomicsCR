@@ -37,7 +37,7 @@ Genera la respuesta usando *exactamente* esta estructura Markdown:
 [Pega aquí el contenido textual de {{#informe_regimen#}}]
 
 ### 5. Análisis de crecimiento interanual
-[Pega aquí el contenido textual de {{#informe_growht_interanual#}}]
+[Pega aquí el contenido textual de {{#growth_interanual#}}]
 """
 
 
@@ -56,6 +56,18 @@ Aquí están los datos para ensamblar el informe:
 --- INFORME DE INDUSTRIA ---
 {{#informe_industria#}}
 {report_industria}
+
+--- INFORME SECTORIAL ---
+{{#informe_sectors#}}
+{report_sectors}
+
+--- INFORME DE REGIMEN ---
+{{#informe_regimen#}}
+{report_regimen}
+
+--- INFORME DE CRECIMIENTO INTERANUAL ---
+{{#growth_interanual#}}
+{report_growth_interanual}
 
 --- DATOS CSV (PARA METADATOS) ---
 {{#context#}}
