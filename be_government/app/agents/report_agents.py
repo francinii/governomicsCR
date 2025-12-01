@@ -40,7 +40,14 @@ class BaseReportAgent(ABC):
         """
         print(f"--- Agente de Reporte de {self.agent_name} en ejecución ---")
         print("="*40 + "\n")
-        #print(f"Contexto recibido: {context}")
+        # Logging del contexto recibido
+        #print(f"[LOG] Contexto recibido por el agente '{self.agent_name}':")
+        if context:
+            print(f"Longitud: {len(context)} caracteres")
+            preview = context[:300] if len(context) > 300 else context
+            print(f"Preview: {preview}")
+        else:
+            print("Sin contexto proporcionado.")
         print("="*40 + "\n")
         
         if context:
@@ -48,7 +55,7 @@ class BaseReportAgent(ABC):
             system_prompt_with_context = self.system_prompt.replace("{{#context#}}", context)
         else:
             system_prompt_with_context = self.system_prompt
-            
+        
         full_prompt = f"{system_prompt_with_context}\n\nPregunta del usuario: {input_question}"
         response = self.llm_client.generate_response(full_prompt)
         return response
@@ -124,9 +131,11 @@ class ReportCompletedAgent:
             reports: Un diccionario con los informes de los sub-agentes.
                      Ej: {"gasto": "...", "industria": "..."}
         """
-        
+        import time
+        start_time = time.time()
+
         print("--- Agente de Reporte ensamblador en ejecución ---")
-        
+
         # DEBUG: Mostrar qué reports se reciben
         print("\n" + "="*60)
         print("🔍 DEBUG: Reports recibidos en ReportCompletedAgent")
@@ -144,9 +153,15 @@ class ReportCompletedAgent:
         # Extrae los informes con un fallback para evitar errores
         report_gasto = reports.get('gasto', 'No se proporcionó informe de gasto.')
         report_industria = reports.get('industria', 'No se proporcionó informe de industria.')
-        
+        report_sectors = reports.get('sectors', 'No se proporcionó informe sectorial.')
+        report_regimen = reports.get('regimen', 'No se proporcionó informe de régimen.')
+        report_growth_interanual = reports.get('growth_interanual', 'No se proporcionó informe de crecimiento interanual.')
+
         print(f"📊 report_gasto: {len(report_gasto)} caracteres")
         print(f"📊 report_industria: {len(report_industria)} caracteres")
+        print(f"📊 report_sectors: {len(report_sectors)} caracteres")
+        print(f"📊 report_regimen: {len(report_regimen)} caracteres")
+        print(f"📊 report_growth_interanual: {len(report_growth_interanual)} caracteres")
         print(f"📊 csv_context_data: {len(csv_context_data) if csv_context_data else 0} caracteres")
 
         # 3. FORMATEAR EL MENSAJE HUMANO
@@ -156,13 +171,16 @@ class ReportCompletedAgent:
                 user_question=user_question,
                 report_gasto=report_gasto,
                 report_industria=report_industria,
+                report_sectors=report_sectors,
+                report_regimen=report_regimen,
+                report_growth_interanual=report_growth_interanual,
                 csv_context_data=csv_context_data or ''
             )
             print(f"✅ Template formateado correctamente: {len(human_message_content)} caracteres")
         except KeyError as e:
             print(f"❌ Error: Falta una clave en la plantilla HUMAN_JOIN_REPORT_PROMPT: {e}")
             return f"Error de configuración del agente: falta la clave {e}"
-        
+
         # 4. CONSTRUIR LA LISTA DE MENSAJES
         messages = [
             SystemMessage(content=self.system_prompt),
@@ -173,10 +191,14 @@ class ReportCompletedAgent:
         print("Generando informe final...")
         response = self.llm_client.generate_chat_response(messages)
         print(f"Informe final generado. Longitud: {len(response)} caracteres")
-        
+
+        end_time = time.time()
+        elapsed = end_time - start_time
+        print(f"⏱️ Tiempo total de ejecución del informe final: {elapsed:.2f} segundos")
+
         if not response or len(response.strip()) == 0:
             print("⚠️  ADVERTENCIA: La respuesta está vacía!")
         elif len(response) < 50:
             print(f"⚠️  ADVERTENCIA: La respuesta es muy corta: {response}")
-        
+
         return response

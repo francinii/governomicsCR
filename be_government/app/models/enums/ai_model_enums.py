@@ -6,18 +6,13 @@ class ModelProvider(Enum):
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
 
-
-from enum import Enum
-
 class OpenAIModels(Enum):
     """
     Define los nombres de los modelos específicos de OpenAI
     usados para generación de texto.
     """
     GPT_CURRENT_USE = "gpt-4.1-mini"
-
-    # --- Familia GPT-5 ---
-    
+    # --- Familia GPT-5 ---    
     GPT_5_1 = "gpt-5.1"
     GPT_5_1_CHAT_LATEST = "gpt-5.1-chat-latest"
     GPT_5_1_CODEX = "gpt-5.1-codex"
