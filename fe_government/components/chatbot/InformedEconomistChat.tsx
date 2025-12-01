@@ -23,12 +23,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Plus, Check } from "lucide-react"
 
-import { sendQuestion, apiBase, REPORT_ENDPOINT } from "@/lib/informedEconomistApi"
+import {
+  sendQuestion,
+  apiBase,
+  REPORT_ENDPOINT,
+  GENERAL_INFO_ENDPOINT,
+} from "@/lib/informedEconomistApi"
 import { quickPrompts } from "@/demo/prompts"
 import { demoAnswer } from "@/demo/qa"
 
 type Msg = { role: "user" | "assistant"; content: string }
-type Mode = "demo" | "api"
+type Mode = "demo" | "report" | "general"
 
 const macroKpis = {
   gdpYoY: "+3.2%",
@@ -38,7 +43,7 @@ const macroKpis = {
 }
 
 export default function InformedEconomistChat() {
-  const [mode, setMode] = React.useState<Mode>("api")
+  const [mode, setMode] = React.useState<Mode>("report")
   const [messages, setMessages] = React.useState<Msg[]>([
     {
       role: "assistant",
@@ -51,7 +56,7 @@ export default function InformedEconomistChat() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const [quickOpen, setQuickOpen] = React.useState<string>("") // quick-prompts
+  const [quickOpen, setQuickOpen] = React.useState<string>("")
 
   const listRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -70,7 +75,7 @@ export default function InformedEconomistChat() {
     setBusy(true)
     setError(null)
 
-    // MODO DEMO: no llama al backend
+    // MODO DEMO
     if (mode === "demo") {
       const demo = demoAnswer(content)
       setMessages(prev => [...prev, { role: "assistant", content: demo }])
@@ -78,8 +83,11 @@ export default function InformedEconomistChat() {
       return
     }
 
-    // MODO API: llama a FastAPI
-    const result = await sendQuestion(content)
+    // MODO API: escoger endpoint según el modo
+    const endpoint =
+      mode === "report" ? REPORT_ENDPOINT : GENERAL_INFO_ENDPOINT
+
+    const result = await sendQuestion(content, endpoint)
 
     if (result.ok) {
       setMessages(prev => [...prev, { role: "assistant", content: result.data }])
@@ -97,6 +105,13 @@ export default function InformedEconomistChat() {
     ])
     setBusy(false)
   }
+
+  const endpointLabel =
+    mode === "report"
+      ? REPORT_ENDPOINT
+      : mode === "general"
+      ? GENERAL_INFO_ENDPOINT
+      : ""
 
   return (
     <div className="mx-auto w-full max-w-4xl h-[80vh] rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
@@ -125,16 +140,14 @@ export default function InformedEconomistChat() {
               </AccordionTrigger>
               <AccordionContent>
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {quickPrompts.map((q) => (
+                  {quickPrompts.map(q => (
                     <Button
                       key={q}
                       variant="outline"
                       size="sm"
                       disabled={busy}
                       onClick={() => {
-                        // 1) enviar prompt
                         send(q)
-                        // 2) cerrar el accordion
                         setQuickOpen("")
                       }}
                     >
@@ -150,7 +163,7 @@ export default function InformedEconomistChat() {
 
       <Separator />
 
-      {/* CHAT: ocupa el espacio disponible dentro del card; scroll solo aquí si hace falta */}
+      {/* Chat */}
       <div
         ref={listRef}
         className="flex flex-col gap-3 overflow-y-auto px-4 py-4 flex-1"
@@ -158,7 +171,9 @@ export default function InformedEconomistChat() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex ${
+              m.role === "user" ? "justify-end" : "justify-start"
+            }`}
           >
             <div
               className={`whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed ${
@@ -187,10 +202,10 @@ export default function InformedEconomistChat() {
         )}
       </div>
 
-      {/* INPUT */}
+      {/* Input */}
       <div className="border-t p-3">
         <div className="flex items-end gap-2">
-          {/* Botón + con menú de opciones */}
+          {/* Menú modos */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -203,31 +218,37 @@ export default function InformedEconomistChat() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Opciones de chat</DropdownMenuLabel>
+              <DropdownMenuLabel>Modo de chat</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => setMode("api")}
+                onClick={() => setMode("report")}
                 className="flex items-center justify-between gap-2"
               >
-                <span>Usar API</span>
-                {mode === "api" && <Check className="h-4 w-4" />}
+                <span>Chat Report</span>
+                {mode === "report" && <Check className="h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setMode("general")}
+                className="flex items-center justify-between gap-2"
+              >
+                <span>Información general</span>
+                {mode === "general" && <Check className="h-4 w-4" />}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setMode("demo")}
                 className="flex items-center justify-between gap-2"
               >
-                <span>Modo demo (sin backend)</span>
+                <span>Modo demo</span>
                 {mode === "demo" && <Check className="h-4 w-4" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Textarea central */}
           <Textarea
             placeholder="Escribe tu consulta…"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
                 send()
@@ -236,7 +257,6 @@ export default function InformedEconomistChat() {
             className="min-h-[44px] flex-1"
           />
 
-          {/* Botón enviar */}
           <Button
             type="button"
             onClick={() => send()}
@@ -248,17 +268,16 @@ export default function InformedEconomistChat() {
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">
-          {mode === "api" ? (
+          {mode === "demo" ? (
+            "Modo demo (sin backend)"
+          ) : (
             <>
-              API → <code>{REPORT_ENDPOINT}</code>{" "}
+              API → <code>{endpointLabel}</code>{" "}
               {apiBase ? `(base: ${apiBase})` : ""}
             </>
-          ) : (
-            "Modo demo (sin backend)"
           )}
         </p>
       </div>
-
     </div>
   )
 }

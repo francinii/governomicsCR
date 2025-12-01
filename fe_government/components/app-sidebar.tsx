@@ -28,7 +28,7 @@ const data = {
   user: { name: "Andrés Salas Olsen", email: "asalaso@ucenfotec.ac.cr", avatar: "avatar.png" },
   navMain: [
     { title: "AI Chat Bot", url: "chatbot", icon: IconMessageChatbot },
-    { title: "Informe", url: "report", icon: IconChartBar },
+    //{ title: "Informe", url: "report", icon: IconChartBar },
     { title: "Docs", url: "docs", icon: IconFileSmile }
   ],
   navSecondary: [

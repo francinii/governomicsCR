@@ -1,20 +1,18 @@
 export const apiBase = process.env.NEXT_PUBLIC_BE_URL ?? "http://localhost:8000"
 
 export const REPORT_ENDPOINT = "/api/v1/pib-chat/report"
+export const GENERAL_INFO_ENDPOINT = "/api/v1/pib-chat/general_information"
 
 export type BackendResult =
   | { ok: true; data: string }
   | { ok: false; error: string }
 
-export async function sendQuestion(question: string): Promise<BackendResult> {
-
-  console.log(process.env);
+export async function sendQuestion(question: string, endpoint: string = REPORT_ENDPOINT): Promise<BackendResult> {
 
   try {
-    const res = await fetch(`${apiBase}${REPORT_ENDPOINT}`, {
+    const res = await fetch(`${apiBase}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-    
       body: JSON.stringify({ question }),
     })
 
@@ -29,7 +27,7 @@ export async function sendQuestion(question: string): Promise<BackendResult> {
           const text = await res.text()
           if (text) message = text
         }
-      } catch {}
+      } catch { }
 
       return { ok: false, error: message }
     }
@@ -44,8 +42,7 @@ export async function sendQuestion(question: string): Promise<BackendResult> {
   } catch {
     return {
       ok: false,
-      error:
-        "No fue posible contactar el backend.",
+      error: "No fue posible contactar el backend.",
     }
   }
 }
